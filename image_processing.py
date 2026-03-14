@@ -27,6 +27,7 @@ class ImageProcessing:
         draw_text_layer.text((self.x, self.y), text, fill=(0, 0, 0, 150), font=font)
 
         self.img = Image.alpha_composite(self.img, text_layer)
-        self.img.convert("RGB").save(path + photo.split('/')[-1])
+        print(path + photo.split('/')[-1])
+        self.img.convert("RGB").save(path + '/' + photo.split('/')[-1])
 
 

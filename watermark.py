@@ -1,6 +1,7 @@
 import ttkbootstrap as ttk
 from tkinter import filedialog as fd
 from image_processing import ImageProcessing
+import threading
 
 FONT = ("Helvetica", 20)
 
@@ -57,7 +58,7 @@ class WatermarkGui:
         self.notselected_label = ttk.Label(self.frame, text="No file selected", width=40)
         self.notselected_label.grid(row=8, column=0, padx=40, pady=(5, 0), sticky='ew')
 
-        self.root.after(200, self.check_button_responsiveness)
+        self.ready_id = self.root.after(200, self.check_button_responsiveness)
 
     def choose_output_path(self) -> None:
 
@@ -79,7 +80,7 @@ class WatermarkGui:
         else:
             self.button.configure(state='disabled')
 
-        self.root.after(200, self.check_button_responsiveness)
+        self.ready_id = self.root.after(200, self.check_button_responsiveness)
 
     def open_files(self) -> None:
         types = (("Image files", "*.jpg *.jpeg *.png"), ("all files", '*.*'))
@@ -145,16 +146,41 @@ class WatermarkGui:
     def get_photos_to_watermark(self) -> list[str] | None:
         return None if not self.selected_files else self.selected_files
 
-    def btn_watermark(self):
-        text = self.entry.get()
-        path = self.get_file_path()
-
-        for image in self.selected_files:
+    def run_process(self, images, text, path) -> None:
+        for image in images:
             self.image_processing.watermark(image, text, path)
 
 
-        self.entry.delete(0, 50)
+        self.root.after(0, self.show_success)
 
+
+    def show_success(self):
+        self.entry.delete(0, 'end')
+        self.button.configure(text="Success!  ", state="normal", bootstyle="success")
+        self.root.after(1500, self.reset_btn)
+
+    def btn_watermark(self):
+        self.root.after_cancel(self.ready_id)
+
+        self.button.configure(command="")
+        self.button.configure(text="Processing...", state="disabled", bootstyle="secondary")
+        self.root.update()
+
+        text = self.entry.get()
+        path = self.get_file_path()
+        images = self.selected_files
+
+        threading.Thread(
+            target= self.run_process,
+            args=(images, text, path),
+            daemon=True
+        ).start()
+
+
+    def reset_btn(self):
+        self.button.configure(text="Watermark", state="disable", bootstyle="primary")
+        self.button.configure(command=self.btn_watermark)
+        self.ready_id = self.root.after(200, self.check_button_responsiveness)
 
 
 if __name__ == "__main__":
